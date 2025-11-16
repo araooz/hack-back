@@ -14,6 +14,7 @@ provider:
   environment:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
+    JWT_SECRET: ${env:JWT_SECRET}
 
 functions:
 
@@ -39,7 +40,10 @@ functions:
       - http:
           path: incidents
           method: post
-          authorizer: authorizer
+          authorizer:
+            name: authorizer
+            type: request
+            identitySource: method.request.header.Authorization
           cors: true
 
   showIncidents:
@@ -48,7 +52,10 @@ functions:
       - http:
           path: incidents
           method: get
-          authorizer: authorizer
+          authorizer:
+            name: authorizer
+            type: request
+            identitySource: method.request.header.Authorization
           cors: true
 
   updateIncidentStatus:
@@ -57,12 +64,15 @@ functions:
       - http:
           path: incidents/status
           method: put
-          authorizer: authorizer
+          authorizer:
+            name: authorizer
+            type: request
+            identitySource: method.request.header.Authorization
           cors: true
 
   # Authorizer (NO es endpoint)
   authorizer:
-    handler: authorizer.handler
+    handler: autorizer.handler
 
 resources:
   Resources:
