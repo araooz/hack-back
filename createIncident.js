@@ -19,6 +19,8 @@ const allowedUrgency = ["low", "medium", "high"];
 const { json } = require("./http");
 
 exports.handler = async (event) => {
+  console.log("ENV WS_DOMAIN:", process.env.WS_DOMAIN);
+  console.log("ENV WS_STAGE:", process.env.WS_STAGE);
   try {
     if (!INCIDENT_TABLE) {
       console.error("ENV ERROR: INCIDENT_TABLE is not configured");

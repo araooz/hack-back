@@ -4,10 +4,15 @@ const { decodeAndVerifyJWT } = require("../utils/jwt");
 const ddb = new DynamoDBClient({});
 
 exports.handler = async (event) => {
-  const token = event.queryStringParameters?.token;
-  if (!token) return { statusCode: 401, body: "Missing token" };
-
-  const payload = decodeAndVerifyJWT(token);
+    const token = event.queryStringParameters?.token;
+    if (!token) return { statusCode: 401, body: "Missing token" };
+    let payload;
+    try {
+        payload = decodeAndVerifyJWT(token);
+    } catch (err) {
+        console.error("JWT ERROR:", err);
+        return { statusCode: 401, body: "Invalid token" };
+    }
 
   const item = {
     connectionId: { S: event.requestContext.connectionId },
