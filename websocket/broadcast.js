@@ -2,7 +2,7 @@ const { ApiGatewayManagementApi } = require("@aws-sdk/client-apigatewaymanagemen
 
 exports.broadcastIncident = async (incident) => {
   const ws = new ApiGatewayManagementApi({
-    endpoint: process.env.WS_ENDPOINT
+    endpoint: process.env.WS_ENDPOINT.replace("wss://", "https://")
   });
 
   const conns = await ddb.send(new ScanCommand({
