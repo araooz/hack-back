@@ -96,7 +96,7 @@ export const handler = async (event) => {
     }
 
     // Validar department
-    if (!isvalidDepartment(department)) {
+    if (!isValidDepartment(department)) {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
