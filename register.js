@@ -152,7 +152,7 @@ export const handler = async (event) => {
     // Insertar con ConditionExpression para evitar duplicados por userId
     try {
       // Normalizar department: si es null/undefined/vacío, usar "noBlank"
-      const normalizeDepartment = 
+      const normalizedDepartment = 
         (department && department !== null && department !== undefined && department !== "") 
           ? department 
           : "noBlank";
@@ -163,7 +163,7 @@ export const handler = async (event) => {
         username: { S: normalizedUsername },
         password: { S: hashedPassword },
         role: { S: normalizedRole },
-        department: { S: normalizeDepartment },
+        department: { S: normalizedDepartment },
       };
 
       await client.send(
