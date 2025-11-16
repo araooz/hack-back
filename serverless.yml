@@ -24,7 +24,7 @@ provider:
           - ".execute-api."
           - Ref: AWS::Region
           - ".amazonaws.com/"
-          - "/${sls:stage}"
+          - Ref: WebSocketStage
     JWT_SECRET: ${env:JWT_SECRET}
     # CORS: allow any origin by default (override with comma-separated list in env)
     ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
