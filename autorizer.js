@@ -1,6 +1,6 @@
-import { createHmac } from "crypto";
+const { createHmac } = require("crypto");
 
-// Convertir Base64URL a Buffer
+// Convertir Base64URL a Buffer y devolver string JSON
 function fromBase64url(str) {
   str = str.replace(/-/g, "+").replace(/_/g, "/");
   const pad = str.length % 4;
@@ -8,9 +8,20 @@ function fromBase64url(str) {
   return Buffer.from(str, "base64").toString();
 }
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   try {
-    const token = event.authorizationToken;
+    // Soportar REQUEST authorizer (event.headers) y TOKEN authorizer (event.authorizationToken)
+    let token = null;
+
+    if (event && event.headers) {
+      // Leer cabecera Authorization (case-insensitive)
+      token = event.headers.Authorization || event.headers.authorization;
+    }
+
+    // Fallback al campo clásico de TOKEN authorizer
+    if (!token && event && event.authorizationToken) {
+      token = event.authorizationToken;
+    }
 
     // Validar que el token existe
     if (!token) {
@@ -47,7 +58,7 @@ export const handler = async (event) => {
       throw new Error("Unauthorized");
     }
 
-    // Verificar firma del token
+    // Verificar firma del token usando el mismo algoritmo (HMAC SHA256) y JWT_SECRET
     const data = `${headerEnc}.${payloadEnc}`;
 
     const expectedSig = createHmac("sha256", process.env.JWT_SECRET)
