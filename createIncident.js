@@ -16,18 +16,20 @@ function generateIncidentId() {
 const allowedCategories = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency"];
 const allowedUrgency = ["low", "medium", "high"];
 
+const { json } = require("./http");
+
 exports.handler = async (event) => {
   try {
     if (!INCIDENT_TABLE) {
       console.error("ENV ERROR: INCIDENT_TABLE is not configured");
-      return { statusCode: 500, body: JSON.stringify({ message: "Server misconfiguration, ENV ERROR: INCIDENT_TABLE is not configured" }) };
+      return json(500, { message: "Server misconfiguration, ENV ERROR: INCIDENT_TABLE is not configured" }, event);
     }
 
     // Obtener user desde authorizer (authorizer.js pone payload en context)
     const auth = (event.requestContext && event.requestContext.authorizer) || {};
     const createdBy = auth.userId || auth.principalId;
     if (!createdBy) {
-      return { statusCode: 401, body: JSON.stringify({ message: "Unauthorized: missing user context" }) };
+      return json(401, { message: "Unauthorized: missing user context" }, event);
     }
 
     const body = event.body ? JSON.parse(event.body) : {};
@@ -35,20 +37,20 @@ exports.handler = async (event) => {
 
     // Validaciones
     if (!category || typeof category !== "string" || !allowedCategories.includes(category)) {
-      return { statusCode: 400, body: JSON.stringify({ message: `category must be one of: ${allowedCategories.join(", ")}` }) };
+      return json(400, { message: `category must be one of: ${allowedCategories.join(", ")}` }, event);
     }
     if (!place || typeof place !== "string" || !place.trim()) {
-      return { statusCode: 400, body: JSON.stringify({ message: "place is required and must be a non-empty string" }) };
+      return json(400, { message: "place is required and must be a non-empty string" }, event);
     }
     if (!description || typeof description !== "string" || !description.trim()) {
-      return { statusCode: 400, body: JSON.stringify({ message: "description is required and must be a non-empty string" }) };
+      return json(400, { message: "description is required and must be a non-empty string" }, event);
     }
 
     // Urgency: por defecto 'low' si no se provee. Si se provee, validar que sea permitido.
     let finalUrgency = "low";
     if (urgency !== undefined && urgency !== null && urgency !== "") {
       if (typeof urgency !== "string" || !allowedUrgency.includes(urgency)) {
-        return { statusCode: 400, body: JSON.stringify({ message: `urgency must be one of: ${allowedUrgency.join(", ")}` }) };
+        return json(400, { message: `urgency must be one of: ${allowedUrgency.join(", ")}` }, event);
       }
       finalUrgency = urgency;
     }
@@ -97,17 +99,14 @@ exports.handler = async (event) => {
       ...incidentResponse
     });
 
-    return {
-      statusCode: 201,
-      body: JSON.stringify({ message: "Incident created", incident: incidentResponse }),
-    };
+    return json(201, { message: "Incident created", incident: incidentResponse }, event);
 
   } catch (err) {
     console.error("CREATE INCIDENT ERROR:", err);
     // Si falla ConditionExpression por colisión (extremadamente raro), retornar 409
     if (err.name === "ConditionalCheckFailedException") {
-      return { statusCode: 409, body: JSON.stringify({ message: "Incident already exists" }) };
+      return json(409, { message: "Incident already exists" }, event);
     }
-    return { statusCode: 500, body: JSON.stringify({ message: "Server error", error: err.message }) };
+    return json(500, { message: "Server error", error: err.message }, event);
   }
 };
