@@ -52,9 +52,9 @@ function isValidRole(role) {
 
 // Validar department
 function isValidDepartment(department) {
-  const validDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
+  const validDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "none"];
   if (!department || department === null || department === undefined || department === "") {
-    return true; // Se convertirá a "noBlank"
+    return true; // Se convertirá a "none"
   }
   return validDepartments.includes(department);
 }
