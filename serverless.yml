@@ -136,3 +136,18 @@ resources:
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL
+
+      WebSocketConnections:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: WebSocketConnections-${sls:stage}
+          BillingMode: PAY_PER_REQUEST
+          AttributeDefinitions:
+            - AttributeName: connectionId
+              AttributeType: S
+          KeySchema:
+            - AttributeName: connectionId
+              KeyType: HASH
+          TimeToLiveSpecification:
+            AttributeName: ttl
+            Enabled: true
