@@ -196,6 +196,14 @@ exports.handler = async (event) => {
       })
     );
 
+    await broadcastIncident({
+      event: "incidentUpdated",
+      incidentId,
+      previousStatus: currentStatus,
+      newStatus: status,
+      updatedBy: userId
+    })
+
     return {
       statusCode: 200,
       body: JSON.stringify({ 

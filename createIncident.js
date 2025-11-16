@@ -92,6 +92,11 @@ exports.handler = async (event) => {
       description: description.trim(),
     };
 
+    await broadcastIncident({
+      event: "incidentCreated",
+      ...incidentResponse
+    });
+
     return {
       statusCode: 201,
       body: JSON.stringify({ message: "Incident created", incident: incidentResponse }),
