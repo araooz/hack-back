@@ -1,6 +1,9 @@
 org: guillaumeboussus
 service: hydra
 
+plugins:
+  - serverless-dotenv-plugin
+  
 provider:
   name: aws
   runtime: nodejs22.x
