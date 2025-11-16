@@ -5,10 +5,9 @@ const ddb = new DynamoDBClient({});
 
 
 exports.broadcastIncident = async (incident) => {
-    const endpoint = `${process.env.WS_DOMAIN}/${process.env.WS_STAGE}`;
-    console.log("WS MGMT ENDPOINT:", endpoint);
+    console.log("WS MGMT ENDPOINT:", process.env.WS_ENDPOINT);
   const ws = new ApiGatewayManagementApi({
-    endpoint
+    endpoint: process.env.WS_ENDPOINT
   });
 
   const conns = await ddb.send(new ScanCommand({
