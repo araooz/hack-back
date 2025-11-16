@@ -1,0 +1,76 @@
+org: araooz
+service: hydra
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  memorySize: 1024
+  timeout: 30
+  iam:
+    role: arn:aws:iam::438511508379:role/LabRole
+  environment:
+    USER_TABLE: ${sls:stage}-UserTable
+    INCIDENT_TABLE: ${sls:stage}-IncidentTable
+
+resources:
+  Resources:
+
+    UserTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.USER_TABLE}
+        BillingMode: PAY_PER_REQUEST
+
+        AttributeDefinitions:
+          - AttributeName: username
+            AttributeType: S   # Para GSI username
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: email
+            AttributeType: S   # Para GSI login
+
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+
+        GlobalSecondaryIndexes:
+          - IndexName: EmailIndex
+            KeySchema:
+              - AttributeName: email
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+          - IndexName: UsernameIndex
+            KeySchema:
+              - AttributeName: username
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+
+    IncidentTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.INCIDENT_TABLE}
+        BillingMode: PAY_PER_REQUEST
+
+        AttributeDefinitions:
+          - AttributeName: incidentId
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S   # Para dashboard
+          - AttributeName: createdAt
+            AttributeType: S   # Para ordenar por fecha
+
+        KeySchema:
+          - AttributeName: incidentId
+            KeyType: HASH
+
+        GlobalSecondaryIndexes:
+          - IndexName: StatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+              - AttributeName: createdAt
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL

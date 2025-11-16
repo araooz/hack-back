@@ -1,4 +1,4 @@
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { createHash, createHmac } from "crypto";
 
 const client = new DynamoDBClient({});
@@ -67,11 +67,12 @@ export const handler = async (event) => {
 
     // Buscar usuario por email o username
     const res = await client.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: USERS_TABLE,
-        FilterExpression: isEmail ? "email = :e" : "username = :e",
+        IndexName: "EmailIndex",
+        KeyConditionExpression: "email = :email",
         ExpressionAttributeValues: {
-          ":e": { S: normalizedEmail },
+          ":email": { S: normalizedEmail },
         },
       })
     );
@@ -127,8 +128,8 @@ export const handler = async (event) => {
       email: user.email.S,
     };
 
-    // Agregar department al payload solo si existe y no es "noBlank"
-    if (user.department && user.department.S && user.department.S !== "noBlank") {
+    // Agregar department al payload solo si existe y no es "none"
+    if (user.department && user.department.S && user.department.S !== "none") {
       payload.department = user.department.S;
     }
 

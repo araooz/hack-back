@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "crypto";
-import { DynamoDBClient, PutItemCommand, QueryCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({});
 const USERS_TABLE = process.env.USER_TABLE;
@@ -100,7 +100,7 @@ export const handler = async (event) => {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
-          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or noBlank" 
+          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or none" 
         }),
       };
     }
@@ -131,9 +131,10 @@ export const handler = async (event) => {
 
     // Verificar si el username ya existe
     const usernameCheck = await client.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: USERS_TABLE,
-        FilterExpression: "username = :username",
+        IndexName: "UsernameIndex",
+        KeyConditionExpression: "username = :username",
         ExpressionAttributeValues: {
           ":username": { S: normalizedUsername },
         },
@@ -152,11 +153,11 @@ export const handler = async (event) => {
 
     // Insertar con ConditionExpression para evitar duplicados por userId
     try {
-      // Normalizar department: si es null/undefined/vacío, usar "noBlank"
+      // Normalizar department: si es null/undefined/vacío, usar "none"
       const normalizedDepartment = 
         (department && department !== null && department !== undefined && department !== "") 
           ? department 
-          : "noBlank";
+          : "none";
 
       const item = {
         userId: { S: userId },
