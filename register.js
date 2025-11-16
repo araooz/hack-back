@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "crypto";
 import { DynamoDBClient, PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({});
-const USERS_TABLE = "UserTable";
+const USERS_TABLE = process.env.USER_TABLE;
 
 // Hash seguro nativo (SHA256 + salt)
 function hashPassword(password) {
