@@ -16,7 +16,15 @@ provider:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-    WS_ENDPOINT: ""
+    WS_ENDPOINT:
+      Fn::Join:
+        - ''
+        - - "wss://"
+          - Ref: WebSocketApi
+          - ".execute-api."
+          - Ref: AWS::Region
+          - ".amazonaws.com/"
+          - ${sls:stage}
     JWT_SECRET: ${env:JWT_SECRET}
     # CORS: allow any origin by default (override with comma-separated list in env)
     ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
