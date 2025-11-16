@@ -9,54 +9,53 @@ provider:
   runtime: nodejs22.x
   region: us-east-1
   memorySize: 1024
-  timeout: 29        # API Gateway max timeout is 29 seconds
+  timeout: 29
   iam:
     role: arn:aws:iam::438511508379:role/LabRole
 
-  # ======================================================
-  # ENVIRONMENT VARIABLES
-  # ======================================================
+  # ONLY STATIC ENV VARS GO HERE
   environment:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-
-    # These will resolve AFTER the first deploy because they use CF outputs:
-    WS_DOMAIN: ${cf:hydra-${sls:stage}.WebSocketApiId}.execute-api.${aws:region}.amazonaws.com
-    WS_STAGE: ${sls:stage}
-
     JWT_SECRET: ${env:JWT_SECRET}
     ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
     CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
+    WS_STAGE: ${sls:stage}
 
-
-# ======================================================
-# FUNCTIONS
-# ======================================================
 functions:
 
   register:
     handler: register.handler
     events:
       - http:
-          path: auth/register
           method: post
+          path: auth/register
           cors: true
 
   login:
     handler: login.handler
     events:
       - http:
-          path: auth/login
           method: post
+          path: auth/login
           cors: true
 
   createIncident:
     handler: createIncident.handler
+    # WE ADD WS_DOMAIN HERE (CloudFormation is allowed inside)
+    environment:
+      WS_DOMAIN:
+        Fn::Join:
+          - ""
+          - - Ref: WebSocketApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com"
     events:
       - http:
-          path: incidents
           method: post
+          path: incidents
           authorizer:
             name: authorizer
             type: request
@@ -67,8 +66,8 @@ functions:
     handler: showIncidents.handler
     events:
       - http:
-          path: incidents
           method: get
+          path: incidents
           authorizer:
             name: authorizer
             type: request
@@ -79,8 +78,8 @@ functions:
     handler: updateIncidentStatus.handler
     events:
       - http:
-          path: incidents/status
           method: put
+          path: incidents/status
           authorizer:
             name: authorizer
             type: request
@@ -90,37 +89,52 @@ functions:
   authorizer:
     handler: autorizer.handler
 
-  # ======================================================
-  # WEBSOCKET ROUTES (Serverless v4 binds automatically)
-  # ======================================================
   websocketConnect:
     handler: websocket/connect.handler
+    environment:
+      WS_DOMAIN:
+        Fn::Join:
+          - ""
+          - - Ref: WebSocketApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com"
     events:
       - websocket:
           route: $connect
 
   websocketDisconnect:
     handler: websocket/disconnect.handler
+    environment:
+      WS_DOMAIN:
+        Fn::Join:
+          - ""
+          - - Ref: WebSocketApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com"
     events:
       - websocket:
           route: $disconnect
 
   websocketDefault:
     handler: websocket/default.handler
+    environment:
+      WS_DOMAIN:
+        Fn::Join:
+          - ""
+          - - Ref: WebSocketApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com"
     events:
       - websocket:
           route: $default
 
 
-# ======================================================
-# CLOUD FORMATION RESOURCES
-# ======================================================
 resources:
   Resources:
 
-    # ------------------------------------------------------
-    # WEBSOCKET API
-    # ------------------------------------------------------
     WebSocketApi:
       Type: AWS::ApiGatewayV2::Api
       Properties:
@@ -128,9 +142,6 @@ resources:
         ProtocolType: WEBSOCKET
         RouteSelectionExpression: "$request.body.action"
 
-    # ------------------------------------------------------
-    # WEBSOCKET STAGE
-    # ------------------------------------------------------
     WebSocketStage:
       Type: AWS::ApiGatewayV2::Stage
       Properties:
@@ -139,9 +150,6 @@ resources:
         StageName: ${sls:stage}
         AutoDeploy: true
 
-    # ------------------------------------------------------
-    # DYNAMODB TABLES
-    # ------------------------------------------------------
     UserTable:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -159,17 +167,13 @@ resources:
             KeyType: HASH
         GlobalSecondaryIndexes:
           - IndexName: EmailIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: email
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: email, KeyType: HASH }
           - IndexName: UsernameIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: username
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: username, KeyType: HASH }
 
     IncidentTable:
       Type: AWS::DynamoDB::Table
@@ -177,24 +181,17 @@ resources:
         TableName: ${self:provider.environment.INCIDENT_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: incidentId
-            AttributeType: S
-          - AttributeName: status
-            AttributeType: S
-          - AttributeName: createdAt
-            AttributeType: S
+          - { AttributeName: incidentId, AttributeType: S }
+          - { AttributeName: status, AttributeType: S }
+          - { AttributeName: createdAt, AttributeType: S }
         KeySchema:
-          - AttributeName: incidentId
-            KeyType: HASH
+          - { AttributeName: incidentId, KeyType: HASH }
         GlobalSecondaryIndexes:
           - IndexName: StatusIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: status
-                KeyType: HASH
-              - AttributeName: createdAt
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: status, KeyType: HASH }
+              - { AttributeName: createdAt, KeyType: RANGE }
 
     WebSocketConnections:
       Type: AWS::DynamoDB::Table
@@ -202,19 +199,9 @@ resources:
         TableName: WebSocketConnections-${sls:stage}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: connectionId
-            AttributeType: S
+          - { AttributeName: connectionId, AttributeType: S }
         KeySchema:
-          - AttributeName: connectionId
-            KeyType: HASH
+          - { AttributeName: connectionId, KeyType: HASH }
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
-
-  # ======================================================
-  # CF OUTPUTS — REQUIRED FOR ENV RESOLUTION IN SLS v4
-  # ======================================================
-  Outputs:
-    WebSocketApiId:
-      Value:
-        Ref: WebSocketApi
