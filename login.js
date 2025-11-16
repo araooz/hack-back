@@ -114,10 +114,10 @@ exports.handler = async (event) => {
 
     // Verificar que JWT_SECRET está configurado
     if (!process.env.JWT_SECRET) {
-      console.error("LOGIN ERROR: JWT_SECRET not configured");
+      console.error("LOGIN ERROR: JWT_SECRET not configured (env variable missing)");
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: "Server error" }),
+        body: JSON.stringify({ message: "Server error: JWT_SECRET is not set in environment" }),
       };
     }
 
