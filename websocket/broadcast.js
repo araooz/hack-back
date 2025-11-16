@@ -1,4 +1,7 @@
+const { DynamoDBClient, ScanCommand, DeleteItemCommand } = require("@aws-sdk/client-dynamodb");
 const { ApiGatewayManagementApi } = require("@aws-sdk/client-apigatewaymanagementapi");
+
+const ddb = new DynamoDBClient({});
 
 exports.broadcastIncident = async (incident) => {
   const ws = new ApiGatewayManagementApi({
@@ -32,6 +35,9 @@ exports.broadcastIncident = async (incident) => {
           TableName: process.env.CONNECTIONS_TABLE,
           Key: { connectionId: { S: connectionId } }
         }));
+      }
+      else {
+        console.error("Broadcast error:", connectionId, err);
       }
     }
   }
