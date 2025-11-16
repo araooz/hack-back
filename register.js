@@ -1,5 +1,5 @@
-import { createHash, randomBytes } from "crypto";
-import { DynamoDBClient, PutItemCommand, QueryCommand } from "@aws-sdk/client-dynamodb";
+const { createHash, randomBytes } = require("crypto");
+const { DynamoDBClient, PutItemCommand, QueryCommand } = require("@aws-sdk/client-dynamodb");
 
 const client = new DynamoDBClient({});
 const USERS_TABLE = process.env.USER_TABLE;
@@ -59,7 +59,7 @@ function isValidDepartment(department) {
   return validDepartments.includes(department);
 }
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
     const { email, username, password, role, department } = body;

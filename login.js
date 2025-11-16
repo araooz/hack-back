@@ -1,5 +1,5 @@
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
-import { createHash, createHmac } from "crypto";
+const { DynamoDBClient, QueryCommand } = require("@aws-sdk/client-dynamodb");
+const { createHash, createHmac } = require("crypto");
 
 const client = new DynamoDBClient({});
 const USERS_TABLE = process.env.USER_TABLE;
@@ -45,7 +45,7 @@ function signJWT(payload, secret, expiresInSec = 3600) {
   return `${data}.${signature}`;
 }
 
-export const handler = async (event) => {
+exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
     const { email, password } = body;
