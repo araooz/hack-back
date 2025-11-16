@@ -3,33 +3,36 @@ service: hydra
 
 plugins:
   - serverless-dotenv-plugin
-  
+
 provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
   memorySize: 1024
-  timeout: 30
+  timeout: 29        # API Gateway max timeout is 29 seconds
   iam:
     role: arn:aws:iam::438511508379:role/LabRole
+
+  # ======================================================
+  # ENVIRONMENT VARIABLES
+  # ======================================================
   environment:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-    WS_DOMAIN:
-      Fn::Join:
-        - ''
-        - - Ref:SWebsocketApi
-          - ".execute-api."
-          - Ref: AWS::Region
-          - ".amazonaws.com/"
+
+    # These will resolve AFTER the first deploy because they use CF outputs:
+    WS_DOMAIN: ${cf:hydra-${sls:stage}.WebSocketApiId}.execute-api.${aws:region}.amazonaws.com
     WS_STAGE: ${sls:stage}
+
     JWT_SECRET: ${env:JWT_SECRET}
-    # CORS: allow any origin by default (override with comma-separated list in env)
     ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
-    # If you need cookies/credentials, set to 'true' BUT then ALLOWED_ORIGINS must NOT be '*'
     CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
 
+
+# ======================================================
+# FUNCTIONS
+# ======================================================
 functions:
 
   register:
@@ -84,72 +87,76 @@ functions:
             identitySource: method.request.header.Authorization
           cors: true
 
-  # Authorizer (NO es endpoint)
   authorizer:
     handler: autorizer.handler
 
-
-  # Websocket handlers
+  # ======================================================
+  # WEBSOCKET ROUTES (Serverless v4 binds automatically)
+  # ======================================================
   websocketConnect:
     handler: websocket/connect.handler
     events:
       - websocket:
           route: $connect
-          msgApiId: 
-            Ref:SWebsocketApi
-  
+
   websocketDisconnect:
     handler: websocket/disconnect.handler
     events:
       - websocket:
           route: $disconnect
-          msgApiId:
-            Ref: WebSocketApi
-
 
   websocketDefault:
     handler: websocket/default.handler
     events:
       - websocket:
           route: $default
-          msgApiId:
-            Ref:SWebsocketApi
 
+
+# ======================================================
+# CLOUD FORMATION RESOURCES
+# ======================================================
 resources:
   Resources:
-    #websocket API definition
+
+    # ------------------------------------------------------
+    # WEBSOCKET API
+    # ------------------------------------------------------
     WebSocketApi:
       Type: AWS::ApiGatewayV2::Api
       Properties:
-        Name: WebSocketApi-${sls:stage}
+        Name: HydraWebSocket
         ProtocolType: WEBSOCKET
         RouteSelectionExpression: "$request.body.action"
 
+    # ------------------------------------------------------
+    # WEBSOCKET STAGE
+    # ------------------------------------------------------
     WebSocketStage:
       Type: AWS::ApiGatewayV2::Stage
       Properties:
-        ApiId: !Ref WebSocketApi
+        ApiId:
+          Ref: WebSocketApi
         StageName: ${sls:stage}
         AutoDeploy: true
-    #tablas DynamoDB
+
+    # ------------------------------------------------------
+    # DYNAMODB TABLES
+    # ------------------------------------------------------
     UserTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:provider.environment.USER_TABLE}
         BillingMode: PAY_PER_REQUEST
-
         AttributeDefinitions:
           - AttributeName: username
-            AttributeType: S   # Para GSI username
+            AttributeType: S
           - AttributeName: userId
             AttributeType: S
           - AttributeName: email
-            AttributeType: S   # Para GSI login
-
+            AttributeType: S
         KeySchema:
           - AttributeName: userId
             KeyType: HASH
-
         GlobalSecondaryIndexes:
           - IndexName: EmailIndex
             KeySchema:
@@ -169,19 +176,16 @@ resources:
       Properties:
         TableName: ${self:provider.environment.INCIDENT_TABLE}
         BillingMode: PAY_PER_REQUEST
-
         AttributeDefinitions:
           - AttributeName: incidentId
             AttributeType: S
           - AttributeName: status
-            AttributeType: S   # Para dashboard
+            AttributeType: S
           - AttributeName: createdAt
-            AttributeType: S   # Para ordenar por fecha
-
+            AttributeType: S
         KeySchema:
           - AttributeName: incidentId
             KeyType: HASH
-
         GlobalSecondaryIndexes:
           - IndexName: StatusIndex
             KeySchema:
@@ -206,3 +210,11 @@ resources:
         TimeToLiveSpecification:
           AttributeName: ttl
           Enabled: true
+
+  # ======================================================
+  # CF OUTPUTS — REQUIRED FOR ENV RESOLUTION IN SLS v4
+  # ======================================================
+  Outputs:
+    WebSocketApiId:
+      Value:
+        Ref: WebSocketApi
