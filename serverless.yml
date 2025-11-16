@@ -9,8 +9,8 @@ provider:
   iam:
     role: arn:aws:iam::438511508379:role/LabRole
   environment:
-    USER_TABLE: ${sls:stage}-UserTable
-    INCIDENT_TABLE: ${sls:stage}-IncidentTable
+    USER_TABLE: UserTable-${sls:stage}
+    INCIDENT_TABLE: IncidentTable-${sls:stage}
 
 resources:
   Resources:
