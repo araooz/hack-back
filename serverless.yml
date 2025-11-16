@@ -23,10 +23,6 @@ provider:
     CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
     WS_STAGE: ${sls:stage}
 
-# ===================================================================
-# FUNCTIONS
-# ===================================================================
-
 functions:
 
   register:
@@ -47,9 +43,17 @@ functions:
 
   createIncident:
     handler: createIncident.handler
-    # CF output is allowed here
     environment:
-      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
+      # https://<api-id>.execute-api.<region>.amazonaws.com/<stage>
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - http:
           path: incidents
@@ -89,13 +93,20 @@ functions:
 
   # ==========================
   # WEBSOCKET ROUTES
-  # Generated automatically per stage by Serverless
   # ==========================
 
   websocketConnect:
     handler: websocket/connect.handler
     environment:
-      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $connect
@@ -103,7 +114,15 @@ functions:
   websocketDisconnect:
     handler: websocket/disconnect.handler
     environment:
-      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $disconnect
@@ -111,17 +130,18 @@ functions:
   websocketDefault:
     handler: websocket/default.handler
     environment:
-      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $default
-
-
-# ===================================================================
-# RESOURCES (ONLY DYNAMODB TABLES)
-# DO NOT DEFINE YOUR OWN WEBSOCKET API OR STAGE
-# Serverless handles WebSockets in v4.
-# ===================================================================
 
 resources:
   Resources:
