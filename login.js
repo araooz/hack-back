@@ -2,7 +2,7 @@ import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { createHash, createHmac } from "crypto";
 
 const client = new DynamoDBClient({});
-const USERS_TABLE = "UserTable";
+const USERS_TABLE = process.env.USER_TABLE;
 
 // Verificar contraseña
 function verifyPassword(password, stored) {
