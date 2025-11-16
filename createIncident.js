@@ -12,14 +12,14 @@ function generateIncidentId() {
 }
 
 // Normalizar y validar campos básicos
-const allowedCategories = ["Limpieza", "infraestructura", "TI", "Seguridad", "Emergencia"];
+const allowedCategories = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency"];
 const allowedUrgency = ["low", "medium", "high"];
 
 exports.handler = async (event) => {
   try {
     if (!INCIDENT_TABLE) {
       console.error("ENV ERROR: INCIDENT_TABLE is not configured");
-      return { statusCode: 500, body: JSON.stringify({ message: "Server misconfiguration" }) };
+      return { statusCode: 500, body: JSON.stringify({ message: "Server misconfiguration, ENV ERROR: INCIDENT_TABLE is not configured" }) };
     }
 
     // Obtener user desde authorizer (authorizer.js pone payload en context)
@@ -63,7 +63,7 @@ exports.handler = async (event) => {
       solvedAt: { NULL: true },
       category: { S: category },
       status: { S: "reported" }, 
-  urgency: { S: finalUrgency },
+      urgency: { S: finalUrgency },
       place: { S: place.trim() },
       description: { S: description.trim() },
     };
@@ -86,7 +86,7 @@ exports.handler = async (event) => {
       solvedAt: null,
       category,
       status: "reported",
-  urgency: finalUrgency,
+      urgency: finalUrgency,
       place: place.trim(),
       description: description.trim(),
     };

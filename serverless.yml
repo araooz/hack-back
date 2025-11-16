@@ -42,6 +42,15 @@ functions:
           authorizer: authorizer
           cors: true
 
+  updateIncidentStatus:
+    handler: updateIncidentStatus.handler
+    events:
+      - http:
+          path: incidents/status
+          method: put
+          authorizer: authorizer
+          cors: true
+
   # Authorizer (NO es endpoint)
   authorizer:
     handler: authorizer.handler
