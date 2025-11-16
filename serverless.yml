@@ -42,6 +42,15 @@ functions:
           authorizer: authorizer
           cors: true
 
+  showIncidents:
+    handler: showIncidents.handler
+    events:
+      - http:
+          path: incidents
+          method: get
+          authorizer: authorizer
+          cors: true
+
   updateIncidentStatus:
     handler: updateIncidentStatus.handler
     events:
