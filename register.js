@@ -46,15 +46,15 @@ function isValidEmail(email) {
 
 // Validar role
 function isValidRole(role) {
-  const validRoles = ["worker", "user", "admin"];
+  const validRoles = ["Worker", "User", "Admin"];
   return validRoles.includes(role.toLowerCase());
 }
 
 // Validar department
 function isValidDepartment(department) {
-  const validDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "none"];
+  const validDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "None"];
   if (!department || department === null || department === undefined || department === "") {
-    return true; // Se convertirá a "none"
+    return true; // Se convertirá a "None"
   }
   return validDepartments.includes(department);
 }
@@ -90,7 +90,7 @@ export const handler = async (event) => {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
-          message: "Invalid role. Must be one of: worker, user, admin" 
+          message: "Invalid role. Must be one of: Worker, User, Admin" 
         }),
       };
     }
@@ -100,7 +100,7 @@ export const handler = async (event) => {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
-          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or none" 
+          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or None" 
         }),
       };
     }
@@ -153,11 +153,11 @@ export const handler = async (event) => {
 
     // Insertar con ConditionExpression para evitar duplicados por userId
     try {
-      // Normalizar department: si es null/undefined/vacío, usar "none"
+      // Normalizar department: si es null/undefined/vacío, usar "None"
       const normalizedDepartment = 
         (department && department !== null && department !== undefined && department !== "") 
           ? department 
-          : "none";
+          : "None";
 
       const item = {
         userId: { S: userId },
