@@ -16,7 +16,7 @@ provider:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-    WS_ENDPOINT: wss://${self:service}.execute-api.${self:provider.region}.amazonaws.com/${sls:stage}
+    WS_ENDPOINT: ""
     JWT_SECRET: ${env:JWT_SECRET}
 
 functions:
