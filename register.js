@@ -52,10 +52,10 @@ function isValidRole(role) {
 
 // Validar component
 function isValidComponent(component) {
-  if (component === null || component === undefined || component === "") {
-    return true; // null es válido
+  const validComponents = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
+  if (!component || component === null || component === undefined || component === "") {
+    return true; // Se convertirá a "noBlank"
   }
-  const validComponents = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency"];
   return validComponents.includes(component);
 }
 
@@ -100,7 +100,7 @@ export const handler = async (event) => {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
-          message: "Invalid component. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or null" 
+          message: "Invalid component. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or noBlank" 
         }),
       };
     }
@@ -151,18 +151,20 @@ export const handler = async (event) => {
 
     // Insertar con ConditionExpression para evitar duplicados por userId
     try {
+      // Normalizar component: si es null/undefined/vacío, usar "noBlank"
+      const normalizedComponent = 
+        (component && component !== null && component !== undefined && component !== "") 
+          ? component 
+          : "noBlank";
+
       const item = {
         userId: { S: userId },
         email: { S: normalizedEmail },
         username: { S: normalizedUsername },
         password: { S: hashedPassword },
         role: { S: normalizedRole },
+        component: { S: normalizedComponent },
       };
-
-      // Agregar component solo si no es null
-      if (component !== null && component !== undefined && component !== "") {
-        item.component = { S: component };
-      }
 
       await client.send(
         new PutItemCommand({

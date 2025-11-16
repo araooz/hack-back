@@ -58,6 +58,10 @@ export const handler = async (event) => {
       };
     }
 
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmail = emailRegex.test(email);
+
     // Normalizar email para comparacion
     const normalizedEmail = email.toLowerCase().trim();
 
@@ -65,7 +69,7 @@ export const handler = async (event) => {
     const res = await client.send(
       new ScanCommand({
         TableName: USERS_TABLE,
-        FilterExpression: "email = :e OR username = :e",
+        FilterExpression: isEmail ? "email = :e" : "username = :e",
         ExpressionAttributeValues: {
           ":e": { S: normalizedEmail },
         },
@@ -79,6 +83,7 @@ export const handler = async (event) => {
       };
     }
 
+    // Si hay múltiples resultados, tomar el primero (no debería pasar con email único)
     const user = res.Items[0];
 
     // Verificar contraseña
@@ -97,6 +102,24 @@ export const handler = async (event) => {
       };
     }
 
+    // Validar que los campos requeridos existen
+    if (!user.userId || !user.userId.S || !user.role || !user.role.S || !user.email || !user.email.S) {
+      console.error("LOGIN ERROR: User data incomplete");
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ message: "Invalid credentials" }),
+      };
+    }
+
+    // Verificar que JWT_SECRET está configurado
+    if (!process.env.JWT_SECRET) {
+      console.error("LOGIN ERROR: JWT_SECRET not configured");
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ message: "Server error" }),
+      };
+    }
+
     // Generar JWT
     const payload = {
       userId: user.userId.S,
@@ -104,8 +127,8 @@ export const handler = async (event) => {
       email: user.email.S,
     };
 
-    // Agregar component al payload si existe
-    if (user.component && user.component.S) {
+    // Agregar component al payload solo si existe y no es "noBlank"
+    if (user.component && user.component.S && user.component.S !== "noBlank") {
       payload.component = user.component.S;
     }
 
