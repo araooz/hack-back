@@ -1,6 +1,8 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 const { decodeAndVerifyJWT } = require("../utils/jwt");
 
+const ddb = new DynamoDBClient({});
+
 exports.handler = async (event) => {
   const token = event.queryStringParameters?.token;
   if (!token) return { statusCode: 401, body: "Missing token" };
