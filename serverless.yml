@@ -16,15 +16,14 @@ provider:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-    WS_ENDPOINT:
+    WS_DOMAIN:
       Fn::Join:
         - ''
-        - - "https://"
-          - Ref: WebsocketsApi
+        - - Ref:SWebsocketApi
           - ".execute-api."
-          - ${self:provider.region}
+          - Ref: AWS::Region
           - ".amazonaws.com/"
-          - ${sls:stage}
+    WS_STAGE: ${sls:stage}
     JWT_SECRET: ${env:JWT_SECRET}
     # CORS: allow any origin by default (override with comma-separated list in env)
     ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
@@ -96,20 +95,42 @@ functions:
     events:
       - websocket:
           route: $connect
+          msgApiId: 
+            Ref:SWebsocketApi
   
   websocketDisconnect:
     handler: websocket/disconnect.handler
     events:
       - websocket:
           route: $disconnect
+          msgApiId:
+            Ref: WebSocketApi
+
+
   websocketDefault:
     handler: websocket/default.handler
     events:
       - websocket:
           route: $default
+          msgApiId:
+            Ref:SWebsocketApi
 
 resources:
   Resources:
+    #websocket API definition
+    WebSocketApi:
+      Type: AWS::ApiGatewayV2::Api
+      Properties:
+        Name: WebSocketApi-${sls:stage}
+        ProtocolType: WEBSOCKET
+        RouteSelectionExpression: "$request.body.action"
+
+    WebSocketStage:
+      Type: AWS::ApiGatewayV2::Stage
+      Properties:
+        ApiId: !Ref: WebSocketApi
+        StageName: ${sls:stage}
+        AutoDeploy: true
     #tablas DynamoDB
     UserTable:
       Type: AWS::DynamoDB::Table
