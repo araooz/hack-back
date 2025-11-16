@@ -127,9 +127,9 @@ export const handler = async (event) => {
       email: user.email.S,
     };
 
-    // Agregar component al payload solo si existe y no es "noBlank"
-    if (user.component && user.component.S && user.component.S !== "noBlank") {
-      payload.component = user.component.S;
+    // Agregar department al payload solo si existe y no es "noBlank"
+    if (user.department && user.department.S && user.department.S !== "noBlank") {
+      payload.department = user.department.S;
     }
 
     const token = signJWT(payload, process.env.JWT_SECRET);

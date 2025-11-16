@@ -50,19 +50,19 @@ function isValidRole(role) {
   return validRoles.includes(role.toLowerCase());
 }
 
-// Validar component
-function isValidComponent(component) {
-  const validComponents = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
-  if (!component || component === null || component === undefined || component === "") {
+// Validar department
+function isValiDepartment(department) {
+  const valiDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
+  if (!department || department === null || department === undefined || department === "") {
     return true; // Se convertirá a "noBlank"
   }
-  return validComponents.includes(component);
+  return valiDepartments.includes(department);
 }
 
 export const handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
-    const { email, username, password, role, component } = body;
+    const { email, username, password, role, department } = body;
 
     if (!email || !username || !password || !role) {
       return { statusCode: 400, body: JSON.stringify({ message: "Missing fields" }) };
@@ -95,12 +95,12 @@ export const handler = async (event) => {
       };
     }
 
-    // Validar component
-    if (!isValidComponent(component)) {
+    // Validar department
+    if (!isValiDepartment(department)) {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
-          message: "Invalid component. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or noBlank" 
+          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or noBlank" 
         }),
       };
     }
@@ -151,10 +151,10 @@ export const handler = async (event) => {
 
     // Insertar con ConditionExpression para evitar duplicados por userId
     try {
-      // Normalizar component: si es null/undefined/vacío, usar "noBlank"
-      const normalizedComponent = 
-        (component && component !== null && component !== undefined && component !== "") 
-          ? component 
+      // Normalizar department: si es null/undefined/vacío, usar "noBlank"
+      const normalizeDepartment = 
+        (department && department !== null && department !== undefined && department !== "") 
+          ? department 
           : "noBlank";
 
       const item = {
@@ -163,7 +163,7 @@ export const handler = async (event) => {
         username: { S: normalizedUsername },
         password: { S: hashedPassword },
         role: { S: normalizedRole },
-        component: { S: normalizedComponent },
+        department: { S: normalizeDepartment },
       };
 
       await client.send(
