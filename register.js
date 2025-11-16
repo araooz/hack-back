@@ -112,9 +112,10 @@ export const handler = async (event) => {
 
     // Verificar si el email ya existe
     const emailCheck = await client.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: USERS_TABLE,
-        FilterExpression: "email = :email",
+        IndexName: "EmailIndex",
+        KeyConditionExpression: "email = :email",
         ExpressionAttributeValues: {
           ":email": { S: normalizedEmail },
         },
