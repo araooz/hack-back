@@ -16,7 +16,7 @@ exports.broadcastIncident = async (incident) => {
     const isWorker = role === "worker";
     const isAdmin = role === "admin";
 
-    if (isWorker && department !== incident.department) continue;
+    if (isWorker && department !== incident.category) continue;
 
     const connectionId = c.connectionId.S;
 
