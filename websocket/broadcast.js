@@ -29,8 +29,8 @@ exports.broadcastIncident = async (incident) => {
         Data: JSON.stringify(incident)
       });
     } catch (err) {
-      if (err.statusCode === 410) {
-        // Means gone: clean it
+      if (err.$metadata && err.$metadata.httpStatusCode === 410) {
+        console.log("Deleting stale connection:", connectionId);
         await ddb.send(new DeleteItemCommand({
           TableName: process.env.CONNECTIONS_TABLE,
           Key: { connectionId: { S: connectionId } }
