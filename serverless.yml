@@ -74,6 +74,25 @@ functions:
   authorizer:
     handler: autorizer.handler
 
+
+  # Websocket handlers
+  websocketConnect:
+    handler: websocket/connect.handler
+    events:
+      - websocket:
+          route: $connect
+  
+  websocketDisconnect:
+    handler: websocket/disconnect.handler
+    events:
+      - websocket:
+          route: $disconnect
+  websocketDefault:
+    handler: websocket/default.handler
+    events:
+      - websocket:
+          route: $default
+
 resources:
   Resources:
 
