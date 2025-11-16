@@ -8,12 +8,12 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
-  memorySize: 1024
   timeout: 29
+  memorySize: 1024
   iam:
     role: arn:aws:iam::438511508379:role/LabRole
 
-  # ONLY STATIC ENV VARS GO HERE
+  # ONLY STATIC ENV VARS GO HERE (NO CF REFERENCES ALLOWED IN V4)
   environment:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
@@ -23,39 +23,37 @@ provider:
     CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
     WS_STAGE: ${sls:stage}
 
+# ===================================================================
+# FUNCTIONS
+# ===================================================================
+
 functions:
 
   register:
     handler: register.handler
     events:
       - http:
-          method: post
           path: auth/register
+          method: post
           cors: true
 
   login:
     handler: login.handler
     events:
       - http:
-          method: post
           path: auth/login
+          method: post
           cors: true
 
   createIncident:
     handler: createIncident.handler
-    # WE ADD WS_DOMAIN HERE (CloudFormation is allowed inside)
+    # CF output is allowed here
     environment:
-      WS_DOMAIN:
-        Fn::Join:
-          - ""
-          - - Ref: WebSocketApi
-            - ".execute-api."
-            - Ref: AWS::Region
-            - ".amazonaws.com"
+      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
     events:
       - http:
-          method: post
           path: incidents
+          method: post
           authorizer:
             name: authorizer
             type: request
@@ -66,8 +64,8 @@ functions:
     handler: showIncidents.handler
     events:
       - http:
-          method: get
           path: incidents
+          method: get
           authorizer:
             name: authorizer
             type: request
@@ -78,8 +76,8 @@ functions:
     handler: updateIncidentStatus.handler
     events:
       - http:
-          method: put
           path: incidents/status
+          method: put
           authorizer:
             name: authorizer
             type: request
@@ -89,16 +87,15 @@ functions:
   authorizer:
     handler: autorizer.handler
 
+  # ==========================
+  # WEBSOCKET ROUTES
+  # Generated automatically per stage by Serverless
+  # ==========================
+
   websocketConnect:
     handler: websocket/connect.handler
     environment:
-      WS_DOMAIN:
-        Fn::Join:
-          - ""
-          - - Ref: WebSocketApi
-            - ".execute-api."
-            - Ref: AWS::Region
-            - ".amazonaws.com"
+      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
     events:
       - websocket:
           route: $connect
@@ -106,13 +103,7 @@ functions:
   websocketDisconnect:
     handler: websocket/disconnect.handler
     environment:
-      WS_DOMAIN:
-        Fn::Join:
-          - ""
-          - - Ref: WebSocketApi
-            - ".execute-api."
-            - Ref: AWS::Region
-            - ".amazonaws.com"
+      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
     events:
       - websocket:
           route: $disconnect
@@ -120,35 +111,20 @@ functions:
   websocketDefault:
     handler: websocket/default.handler
     environment:
-      WS_DOMAIN:
-        Fn::Join:
-          - ""
-          - - Ref: WebSocketApi
-            - ".execute-api."
-            - Ref: AWS::Region
-            - ".amazonaws.com"
+      WS_DOMAIN: ${cf:${self:service}-${sls:stage}.WebsocketsApiId}.execute-api.${aws:region}.amazonaws.com
     events:
       - websocket:
           route: $default
 
 
+# ===================================================================
+# RESOURCES (ONLY DYNAMODB TABLES)
+# DO NOT DEFINE YOUR OWN WEBSOCKET API OR STAGE
+# Serverless handles WebSockets in v4.
+# ===================================================================
+
 resources:
   Resources:
-
-    WebSocketApi:
-      Type: AWS::ApiGatewayV2::Api
-      Properties:
-        Name: HydraWebSocket
-        ProtocolType: WEBSOCKET
-        RouteSelectionExpression: "$request.body.action"
-
-    WebSocketStage:
-      Type: AWS::ApiGatewayV2::Stage
-      Properties:
-        ApiId:
-          Ref: WebSocketApi
-        StageName: ${sls:stage}
-        AutoDeploy: true
 
     UserTable:
       Type: AWS::DynamoDB::Table
@@ -156,15 +132,11 @@ resources:
         TableName: ${self:provider.environment.USER_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
-          - AttributeName: username
-            AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-          - AttributeName: email
-            AttributeType: S
+          - { AttributeName: username, AttributeType: S }
+          - { AttributeName: userId, AttributeType: S }
+          - { AttributeName: email, AttributeType: S }
         KeySchema:
-          - AttributeName: userId
-            KeyType: HASH
+          - { AttributeName: userId, KeyType: HASH }
         GlobalSecondaryIndexes:
           - IndexName: EmailIndex
             Projection: { ProjectionType: ALL }
