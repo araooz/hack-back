@@ -128,7 +128,7 @@ resources:
     WebSocketStage:
       Type: AWS::ApiGatewayV2::Stage
       Properties:
-        ApiId: !Ref: WebSocketApi
+        ApiId: !Ref WebSocketApi
         StageName: ${sls:stage}
         AutoDeploy: true
     #tablas DynamoDB
