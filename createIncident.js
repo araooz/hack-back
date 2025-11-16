@@ -42,8 +42,14 @@ exports.handler = async (event) => {
     if (!description || typeof description !== "string" || !description.trim()) {
       return { statusCode: 400, body: JSON.stringify({ message: "description is required and must be a non-empty string" }) };
     }
-    if (urgency && !allowedUrgency.includes(urgency)) {
-      return { statusCode: 400, body: JSON.stringify({ message: `urgency must be one of: ${allowedUrgency.join(", ")}` }) };
+
+    // Urgency: por defecto 'low' si no se provee. Si se provee, validar que sea permitido.
+    let finalUrgency = "low";
+    if (urgency !== undefined && urgency !== null && urgency !== "") {
+      if (typeof urgency !== "string" || !allowedUrgency.includes(urgency)) {
+        return { statusCode: 400, body: JSON.stringify({ message: `urgency must be one of: ${allowedUrgency.join(", ")}` }) };
+      }
+      finalUrgency = urgency;
     }
 
     // Datos del incidente
@@ -57,7 +63,7 @@ exports.handler = async (event) => {
       solvedAt: { NULL: true },
       category: { S: category },
       status: { S: "reported" }, 
-      urgency: urgency ? { S: urgency } : { NULL: true },
+  urgency: { S: finalUrgency },
       place: { S: place.trim() },
       description: { S: description.trim() },
     };
@@ -80,7 +86,7 @@ exports.handler = async (event) => {
       solvedAt: null,
       category,
       status: "reported",
-      urgency: urgency || null,
+  urgency: finalUrgency,
       place: place.trim(),
       description: description.trim(),
     };
