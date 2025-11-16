@@ -20,7 +20,7 @@ provider:
       Fn::Join:
         - ''
         - - "https://"
-          - Ref: ApiGatewayWebsocketApi
+          - Ref: WebSocketsApi
           - ".execute-api."
           - Ref: AWS::Region
           - ".amazonaws.com/${sls:stage}"
