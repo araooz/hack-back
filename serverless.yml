@@ -31,6 +31,14 @@ functions:
           path: auth/login
           method: post
 
+  createIncident:
+    handler: createIncident.handler
+    events:
+      - http:
+          path: incidents
+          method: post
+          authorizer: authorizer
+
   # Authorizer (NO es endpoint)
   authorizer:
     handler: authorizer.handler
