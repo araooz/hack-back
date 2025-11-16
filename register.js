@@ -47,7 +47,7 @@ function isValidEmail(email) {
 // Validar role
 function isValidRole(role) {
   const validRoles = ["Worker", "User", "Admin"];
-  return validRoles.includes(role.toLowerCase());
+  return validRoles.includes(role);
 }
 
 // Validar department
