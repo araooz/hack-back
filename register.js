@@ -59,50 +59,36 @@ function isValidDepartment(department) {
   return validDepartments.includes(department);
 }
 
+const { json } = require("./http");
+
 exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
     const { email, username, password, role, department } = body;
 
     if (!email || !username || !password || !role) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Missing fields" }) };
+      return json(400, { message: "Missing fields" }, event);
     }
 
     // Validar formato de email
     if (!isValidEmail(email)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Invalid email format" }),
-      };
+      return json(400, { message: "Invalid email format" }, event);
     }
 
     // Validar fortaleza de contraseña
     const passwordValidation = isStrongPassword(password);
     if (!passwordValidation.valid) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: passwordValidation.message }),
-      };
+      return json(400, { message: passwordValidation.message }, event);
     }
 
     // Validar role
     if (!isValidRole(role)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ 
-          message: "Invalid role. Must be one of: Worker, User, Admin" 
-        }),
-      };
+      return json(400, { message: "Invalid role. Must be one of: Worker, User, Admin" }, event);
     }
 
     // Validar department
     if (!isValidDepartment(department)) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ 
-          message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or None" 
-        }),
-      };
+      return json(400, { message: "Invalid department. Must be one of: IT, Cleaner, Infrastructure, Security, Emergency, or None" }, event);
     }
 
     // Normalizar email y username para comparacion
@@ -123,10 +109,7 @@ exports.handler = async (event) => {
     );
 
     if (emailCheck.Items && emailCheck.Items.length > 0) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({ message: "Email already registered" }),
-      };
+      return json(409, { message: "Email already registered" }, event);
     }
 
     // Verificar si el username ya existe
@@ -142,10 +125,7 @@ exports.handler = async (event) => {
     );
 
     if (usernameCheck.Items && usernameCheck.Items.length > 0) {
-      return {
-        statusCode: 409,
-        body: JSON.stringify({ message: "Username already taken" }),
-      };
+      return json(409, { message: "Username already taken" }, event);
     }
 
     const hashedPassword = hashPassword(password);
@@ -177,25 +157,16 @@ exports.handler = async (event) => {
       );
     } catch (putError) {
       if (putError.name === "ConditionalCheckFailedException") {
-        return {
-          statusCode: 409,
-          body: JSON.stringify({ message: "User already exists" }),
-        };
+        return json(409, { message: "User already exists" }, event);
       }
       throw putError;
     }
 
-    return {
-      statusCode: 201,
-      body: JSON.stringify({ message: "User created", userId }),
-    };
+    return json(201, { message: "User created", userId }, event);
 
   } catch (err) {
     console.error("REGISTER ERROR:", err);
     
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: err.message }),
-    };
+    return json(500, { message: "Server error", error: err.message }, event);
   }
 };

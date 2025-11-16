@@ -17,6 +17,10 @@ provider:
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
     WS_ENDPOINT: wss://${self:service}.execute-api.${self:provider.region}.amazonaws.com/${sls:stage}
     JWT_SECRET: ${env:JWT_SECRET}
+    # CORS: allow any origin by default (override with comma-separated list in env)
+    ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
+    # If you need cookies/credentials, set to 'true' BUT then ALLOWED_ORIGINS must NOT be '*'
+    CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
 
 functions:
 
@@ -158,17 +162,17 @@ resources:
             Projection:
               ProjectionType: ALL
 
-      WebSocketConnections:
-        Type: AWS::DynamoDB::Table
-        Properties:
-          TableName: WebSocketConnections-${sls:stage}
-          BillingMode: PAY_PER_REQUEST
-          AttributeDefinitions:
-            - AttributeName: connectionId
-              AttributeType: S
-          KeySchema:
-            - AttributeName: connectionId
-              KeyType: HASH
-          TimeToLiveSpecification:
-            AttributeName: ttl
-            Enabled: true
+    WebSocketConnections:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: WebSocketConnections-${sls:stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: connectionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: connectionId
+            KeyType: HASH
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true

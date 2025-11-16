@@ -45,6 +45,8 @@ function signJWT(payload, secret, expiresInSec = 3600) {
   return `${data}.${signature}`;
 }
 
+const { json } = require("./http");
+
 exports.handler = async (event) => {
   try {
     const body = JSON.parse(event.body);
@@ -52,10 +54,7 @@ exports.handler = async (event) => {
 
     // Validar campos requeridos
     if (!email || !password) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Missing fields: email and password are required" }),
-      };
+      return json(400, { message: "Missing fields: email and password are required" }, event);
     }
 
     // Validar formato de email
@@ -78,10 +77,7 @@ exports.handler = async (event) => {
     );
 
     if (!res.Items || res.Items.length === 0) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Invalid credentials" }),
-      };
+      return json(401, { message: "Invalid credentials" }, event);
     }
 
     // Si hay múltiples resultados, tomar el primero (no debería pasar con email único)
@@ -89,36 +85,24 @@ exports.handler = async (event) => {
 
     // Verificar contraseña
     if (!user.password || !user.password.S) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Invalid credentials" }),
-      };
+      return json(401, { message: "Invalid credentials" }, event);
     }
 
     const valid = verifyPassword(password, user.password.S);
     if (!valid) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Invalid credentials" }),
-      };
+      return json(401, { message: "Invalid credentials" }, event);
     }
 
     // Validar que los campos requeridos existen
     if (!user.userId || !user.userId.S || !user.role || !user.role.S || !user.email || !user.email.S) {
       console.error("LOGIN ERROR: User data incomplete");
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Invalid credentials" }),
-      };
+      return json(401, { message: "Invalid credentials" }, event);
     }
 
     // Verificar que JWT_SECRET está configurado
     if (!process.env.JWT_SECRET) {
       console.error("LOGIN ERROR: JWT_SECRET not configured (env variable missing)");
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: "Server error: JWT_SECRET is not set in environment" }),
-      };
+      return json(500, { message: "Server error: JWT_SECRET is not set in environment" }, event);
     }
 
     // Generar JWT
@@ -135,16 +119,10 @@ exports.handler = async (event) => {
 
     const token = signJWT(payload, process.env.JWT_SECRET);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ token }),
-    };
+    return json(200, { token }, event);
 
   } catch (err) {
     console.error("LOGIN ERROR:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: err.message }),
-    };
+    return json(500, { message: "Server error", error: err.message }, event);
   }
 };
