@@ -201,7 +201,8 @@ exports.handler = async (event) => {
       incidentId,
       previousStatus: currentStatus,
       newStatus: status,
-      updatedBy: userId
+      updatedBy: userId,
+      category: incident.category.S
     })
 
     return {
