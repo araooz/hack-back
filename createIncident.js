@@ -1,5 +1,6 @@
 const { DynamoDBClient, PutItemCommand } = require("@aws-sdk/client-dynamodb");
 const { createHash, randomBytes } = require("crypto");
+const { broadcastIncident } = require("./websocket/broadcast");
 
 const client = new DynamoDBClient({});
 const INCIDENT_TABLE = process.env.INCIDENT_TABLE;

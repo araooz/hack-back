@@ -1,4 +1,5 @@
 const { DynamoDBClient, GetItemCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
+const { broadcastIncident } = require("./websocket/broadcast");
 
 const client = new DynamoDBClient({});
 const INCIDENT_TABLE = process.env.INCIDENT_TABLE;
