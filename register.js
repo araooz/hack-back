@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "crypto";
-import { DynamoDBClient, PutItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, PutItemCommand, QueryCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const client = new DynamoDBClient({});
 const USERS_TABLE = process.env.USER_TABLE;
