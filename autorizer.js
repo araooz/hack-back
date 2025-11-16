@@ -95,6 +95,37 @@ exports.handler = async (event) => {
       throw new Error("Unauthorized");
     }
 
+    // Obtener methodArn del evento (puede estar en diferentes lugares según el tipo de authorizer)
+    let methodArn = event.methodArn;
+    
+    // Si no está disponible, intentar construir el ARN o usar wildcard
+    if (!methodArn) {
+      // Para authorizers de tipo REQUEST, construir ARN desde event.routeArn o usar wildcard
+      if (event.routeArn) {
+        methodArn = event.routeArn;
+      } else if (event.requestContext && event.requestContext.apiId) {
+        // Construir ARN básico con wildcard para permitir todas las rutas
+        const apiId = event.requestContext.apiId;
+        const region = event.requestContext.region || process.env.AWS_REGION || 'us-east-1';
+        const accountId = event.requestContext.accountId || '*';
+        methodArn = `arn:aws:execute-api:${region}:${accountId}:${apiId}/*/*`;
+      } else {
+        // Fallback: usar wildcard completo
+        methodArn = '*';
+      }
+    }
+    
+    // Si el methodArn termina con un método específico, crear wildcard para permitir todas las rutas
+    // Esto es necesario porque API Gateway puede pasar ARNs específicos que no coinciden
+    if (methodArn && !methodArn.endsWith('*/*')) {
+      // Extraer la parte base del ARN (hasta el stage)
+      const arnParts = methodArn.split('/');
+      if (arnParts.length >= 2) {
+        // Reemplazar método y path con wildcards
+        methodArn = `${arnParts.slice(0, -2).join('/')}/*/*`;
+      }
+    }
+
     // Retornar política IAM con contexto
     return {
       principalId: payload.userId,
@@ -104,7 +135,7 @@ exports.handler = async (event) => {
           {
             Action: "execute-api:Invoke",
             Effect: "Allow",
-            Resource: event.methodArn,
+            Resource: methodArn,
           },
         ],
       },
