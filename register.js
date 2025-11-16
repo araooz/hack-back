@@ -51,12 +51,12 @@ function isValidRole(role) {
 }
 
 // Validar department
-function isValiDepartment(department) {
-  const valiDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
+function isValidDepartment(department) {
+  const validDepartments = ["IT", "Cleaner", "Infrastructure", "Security", "Emergency", "noBlank"];
   if (!department || department === null || department === undefined || department === "") {
     return true; // Se convertirá a "noBlank"
   }
-  return valiDepartments.includes(department);
+  return validDepartments.includes(department);
 }
 
 export const handler = async (event) => {
@@ -96,7 +96,7 @@ export const handler = async (event) => {
     }
 
     // Validar department
-    if (!isValiDepartment(department)) {
+    if (!isvalidDepartment(department)) {
       return {
         statusCode: 400,
         body: JSON.stringify({ 
