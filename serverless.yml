@@ -3,21 +3,25 @@ service: hydra
 
 plugins:
   - serverless-dotenv-plugin
-  
+
 provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
+  timeout: 29
   memorySize: 1024
-  timeout: 30
   iam:
     role: arn:aws:iam::438511508379:role/LabRole
+
+  # ONLY STATIC ENV VARS GO HERE (NO CF REFERENCES ALLOWED IN V4)
   environment:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
     CONNECTIONS_TABLE: WebSocketConnections-${sls:stage}
-    WS_ENDPOINT: ""
     JWT_SECRET: ${env:JWT_SECRET}
+    ALLOWED_ORIGINS: ${env:ALLOWED_ORIGINS, '*'}
+    CORS_ALLOW_CREDENTIALS: ${env:CORS_ALLOW_CREDENTIALS, 'false'}
+    WS_STAGE: ${sls:stage}
 
 functions:
 
@@ -39,6 +43,17 @@ functions:
 
   createIncident:
     handler: createIncident.handler
+    environment:
+      # https://<api-id>.execute-api.<region>.amazonaws.com/<stage>
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - http:
           path: incidents
@@ -73,25 +88,57 @@ functions:
             identitySource: method.request.header.Authorization
           cors: true
 
-  # Authorizer (NO es endpoint)
   authorizer:
     handler: autorizer.handler
 
+  # ==========================
+  # WEBSOCKET ROUTES
+  # ==========================
 
-  # Websocket handlers
   websocketConnect:
     handler: websocket/connect.handler
+    environment:
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $connect
-  
+
   websocketDisconnect:
     handler: websocket/disconnect.handler
+    environment:
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $disconnect
+
   websocketDefault:
     handler: websocket/default.handler
+    environment:
+      WS_ENDPOINT:
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: WebsocketsApi
+            - ".execute-api."
+            - Ref: AWS::Region
+            - ".amazonaws.com/"
+            - ${sls:stage}
     events:
       - websocket:
           route: $default
@@ -104,72 +151,49 @@ resources:
       Properties:
         TableName: ${self:provider.environment.USER_TABLE}
         BillingMode: PAY_PER_REQUEST
-
         AttributeDefinitions:
-          - AttributeName: username
-            AttributeType: S   # Para GSI username
-          - AttributeName: userId
-            AttributeType: S
-          - AttributeName: email
-            AttributeType: S   # Para GSI login
-
+          - { AttributeName: username, AttributeType: S }
+          - { AttributeName: userId, AttributeType: S }
+          - { AttributeName: email, AttributeType: S }
         KeySchema:
-          - AttributeName: userId
-            KeyType: HASH
-
+          - { AttributeName: userId, KeyType: HASH }
         GlobalSecondaryIndexes:
           - IndexName: EmailIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: email
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: email, KeyType: HASH }
           - IndexName: UsernameIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: username
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: username, KeyType: HASH }
 
     IncidentTable:
       Type: AWS::DynamoDB::Table
       Properties:
         TableName: ${self:provider.environment.INCIDENT_TABLE}
         BillingMode: PAY_PER_REQUEST
-
         AttributeDefinitions:
-          - AttributeName: incidentId
-            AttributeType: S
-          - AttributeName: status
-            AttributeType: S   # Para dashboard
-          - AttributeName: createdAt
-            AttributeType: S   # Para ordenar por fecha
-
+          - { AttributeName: incidentId, AttributeType: S }
+          - { AttributeName: status, AttributeType: S }
+          - { AttributeName: createdAt, AttributeType: S }
         KeySchema:
-          - AttributeName: incidentId
-            KeyType: HASH
-
+          - { AttributeName: incidentId, KeyType: HASH }
         GlobalSecondaryIndexes:
           - IndexName: StatusIndex
+            Projection: { ProjectionType: ALL }
             KeySchema:
-              - AttributeName: status
-                KeyType: HASH
-              - AttributeName: createdAt
-                KeyType: RANGE
-            Projection:
-              ProjectionType: ALL
+              - { AttributeName: status, KeyType: HASH }
+              - { AttributeName: createdAt, KeyType: RANGE }
 
-      WebSocketConnections:
-        Type: AWS::DynamoDB::Table
-        Properties:
-          TableName: WebSocketConnections-${sls:stage}
-          BillingMode: PAY_PER_REQUEST
-          AttributeDefinitions:
-            - AttributeName: connectionId
-              AttributeType: S
-          KeySchema:
-            - AttributeName: connectionId
-              KeyType: HASH
-          TimeToLiveSpecification:
-            AttributeName: ttl
-            Enabled: true
+    WebSocketConnections:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: WebSocketConnections-${sls:stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - { AttributeName: connectionId, AttributeType: S }
+        KeySchema:
+          - { AttributeName: connectionId, KeyType: HASH }
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true

@@ -24,15 +24,14 @@ function unmarshallItem(item) {
   return result;
 }
 
+const { json } = require("./http");
+
 exports.handler = async (event) => {
   try {
     // Validar que la tabla está configurada
     if (!INCIDENT_TABLE) {
       console.error("ENV ERROR: INCIDENT_TABLE is not configured");
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: "Server misconfiguration, ENV ERROR: INCIDENT_TABLE is not configured" }),
-      };
+      return json(500, { message: "Server misconfiguration, ENV ERROR: INCIDENT_TABLE is not configured" }, event);
     }
 
     // Obtener user desde authorizer (authorizer.js pone payload en context)
@@ -40,10 +39,7 @@ exports.handler = async (event) => {
     const userId = auth.userId || auth.principalId;
     
     if (!userId) {
-      return {
-        statusCode: 401,
-        body: JSON.stringify({ message: "Unauthorized: missing user context" }),
-      };
+      return json(401, { message: "Unauthorized: missing user context" }, event);
     }
 
     // Escanear todos los incidentes de la tabla
@@ -56,21 +52,11 @@ exports.handler = async (event) => {
     // Convertir los items de DynamoDB a objetos JavaScript normales
     const incidents = (scanResult.Items || []).map((item) => unmarshallItem(item));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        message: "Incidents retrieved successfully",
-        incidents: incidents,
-        count: incidents.length,
-      }),
-    };
+    return json(200, { message: "Incidents retrieved successfully", incidents, count: incidents.length }, event);
 
   } catch (err) {
     console.error("SHOW INCIDENTS ERROR:", err);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Server error", error: err.message }),
-    };
+    return json(500, { message: "Server error", error: err.message }, event);
   }
 };
 
