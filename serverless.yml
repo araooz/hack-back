@@ -12,6 +12,26 @@ provider:
     USER_TABLE: UserTable-${sls:stage}
     INCIDENT_TABLE: IncidentTable-${sls:stage}
 
+functions:
+
+  register:
+    handler: register.handler
+    events:
+      - http:
+          path: auth/register
+          method: post
+
+  login:
+    handler: login.handler
+    events:
+      - http:
+          path: auth/login
+          method: post
+
+  # Authorizer (NO es endpoint)
+  authorizer:
+    handler: authorizer.handler
+
 resources:
   Resources:
 
