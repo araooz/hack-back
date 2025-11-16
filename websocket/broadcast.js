@@ -4,6 +4,7 @@ const { ApiGatewayManagementApi } = require("@aws-sdk/client-apigatewaymanagemen
 const ddb = new DynamoDBClient({});
 
 exports.broadcastIncident = async (incident) => {
+    console.log("Using WebSocket endpoint:", process.env.WS_ENDPOINT);
   const ws = new ApiGatewayManagementApi({
     endpoint: process.env.WS_ENDPOINT
   });
