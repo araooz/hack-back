@@ -23,6 +23,7 @@ functions:
       - http:
           path: auth/register
           method: post
+          cors: true
 
   login:
     handler: login.handler
@@ -30,6 +31,7 @@ functions:
       - http:
           path: auth/login
           method: post
+          cors: true
 
   createIncident:
     handler: createIncident.handler
@@ -38,6 +40,7 @@ functions:
           path: incidents
           method: post
           authorizer: authorizer
+          cors: true
 
   # Authorizer (NO es endpoint)
   authorizer:
