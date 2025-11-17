@@ -44,7 +44,6 @@ functions:
   createIncident:
     handler: createIncident.handler
     environment:
-      # https://<api-id>.execute-api.<region>.amazonaws.com/<stage>
       WS_ENDPOINT:
         Fn::Join:
           - ""

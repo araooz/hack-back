@@ -42,6 +42,10 @@ exports.handler = async (event) => {
       return json(401, { message: "Unauthorized: missing user context" }, event);
     }
 
+    // Leer query params y evaluar onlyMine
+    const query = event.queryStringParameters || {};
+    const onlyMine = query.onlyMine === "true"; // se espera string "true"
+
     // Escanear todos los incidentes de la tabla
     const scanResult = await client.send(
       new ScanCommand({
@@ -50,7 +54,12 @@ exports.handler = async (event) => {
     );
 
     // Convertir los items de DynamoDB a objetos JavaScript normales
-    const incidents = (scanResult.Items || []).map((item) => unmarshallItem(item));
+    let incidents = (scanResult.Items || []).map((item) => unmarshallItem(item));
+
+    // Filtro opcional: solo incidentes creados por el usuario autenticado
+    if (onlyMine) {
+      incidents = incidents.filter((i) => i.createdBy === userId);
+    }
 
     return json(200, { message: "Incidents retrieved successfully", incidents, count: incidents.length }, event);
 
